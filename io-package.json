@@ -1,0 +1,52 @@
+{
+    "common": {
+        "name": "ZoneMinder",
+        "version": "0.5.0",
+        "news": {
+            "0.5.0": {
+                "en": "beta version",
+                "de": "Betaversion",
+                "ru": "Бета версия",
+                "pt": "Versão beta",
+                "fr": "Version bêta",
+                "nl": "Beta versie"
+            },
+            "0.0.1": {
+                "en": "initial adapter",
+                "de": "Initiale Version",
+                "ru": "Первоначальный адаптер",
+                "pt": "Versão inicial",
+                "fr": "Version initiale",
+                "nl": "Eerste release"
+            }
+        },
+        "title": "ZoneMinder adapter",
+        "desc": {
+            "en": "ZoneMinder Adapter",
+            "de": "ZoneMinder Adapter",
+            "ru": "ioBroker Template драйвер как образец",
+            "pt": "Modelo de adaptador para o ioBroker",
+            "fr": "ioBroker adaptateur modèle",
+            "nl": "ioBroker Template Adapter"
+        },
+        "platform": "Javascript/Node.js",
+        "mode": "daemon",
+        "icon": "zoneminder.png",
+        "enabled": true,
+        "extIcon": "https://raw.githubusercontent.com/ioBroker/ioBroker.template/master/admin/template.png",
+        "keywords": ["zoneminder", "webcam","control","scada"],
+        "readme": "https://github.com/ioBroker/ioBroker.template/blob/master/README.md",
+        "loglevel": "info",
+        "type": "general",
+        "restartAdapters": ["vis"]
+    },
+    "native": {
+        "host": "localhost",
+        "user": "admin",
+        "password" : "admin"
+
+    },
+    "objects": [
+
+    ]
+}
