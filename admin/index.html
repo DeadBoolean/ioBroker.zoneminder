@@ -71,13 +71,14 @@
 <div id="adapter-container">
 
     <table><tr>
-        <td><img src="template.png"/></td>
+        <td><img src="zoneminder.png"/></td>
         <td><h3 class="translate">ZoneMinder settings</h3></td>
     </tr></table>
     <p>
-        <span><label for="host" class="translate">ZoneMinder URL</label></span><input class="value" id="host"/><br>
-        <span><label for="user" class="translate">User</label></span><input class="value" id="user"/><br>
-        <span><label for="password" class="translate">Password</label></span><input class="value" id="password"/><br>
+        <span><label for="host" class="translate">ZoneMinder URL</label></span><input type="url" class="value" id="host"/><br>
+        <span><label for="user" class="translate">User</label></span><input  class="value" id="user"/><br>
+        <span><label for="password" class="translate">Password</label></span><input type="password" class="value" id="password"/><br>
+        <span><label for="polling" class="translate">Update alle </label></span><input type = "number" class="value" id="polling"/>ms<br>
     </p>
 
     <p class="translate">on save adapter restarts with new config immediately</p>
