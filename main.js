@@ -84,9 +84,6 @@ function main() {
 
     // The adapters config (in the instance object everything under the attribute "native") is accessible via
     // adapter.config:
-    adapter.log.info('config host: ' + adapter.config.host);
-    adapter.log.info('config user: ' + adapter.config.user);
-    adapter.log.info('config pass: ' + adapter.config.password);
 
     var LocalMonitorNames = [];
     var LocalMonitorObjects = [];
@@ -143,14 +140,18 @@ function main() {
         }
          else  {
             Zone.RequestMonitorsList(AddMonitor);
-            LocalMonitorIDs.forEach(function (V) {
-                Zone.RequestMonitorState(V, UpdateState);
-            });
+
         }
     }
 
+    function UpdateMonitorsStates () {
+        LocalMonitorIDs.forEach(function (V) {
+            Zone.RequestMonitorState(V, UpdateState);
+        });
+    }
+
     UpdateMonitorsObj = setInterval(UpdateMonitors, adapter.config.pollingMon * 1000 * 60);
-    UpdateMonitorsStateObj = setInterval(UpdateMonitors, adapter.config.pollingMonStates * 1000);
+    UpdateMonitorsStateObj = setInterval(UpdateMonitorsStates, adapter.config.pollingMonStates * 1000);
 
 
 function UpdateState(id,state) {
@@ -232,13 +233,6 @@ function AddMonitor(Mon) {
     adapter.subscribeStates('*');
 
     // examples for the checkPassword/checkGroup functions
-    adapter.checkPassword('admin', 'iobroker', function (res) {
-        console.log('check user admin pw ioboker: ' + res);
-    });
-
-    adapter.checkGroup('admin', 'admin', function (res) {
-        console.log('check group user admin group admin: ' + res);
-    });
 
 
 
