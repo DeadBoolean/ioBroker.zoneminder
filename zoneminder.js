@@ -79,6 +79,13 @@ function ZoneMinder() {
 
     }
 
+    this.RequestMonitorState = function(id,result) {
+        return this.API_Request('/api/monitors/alarm/id:'+id+'/command:status.json', function (data) {
+            var fbResponse = JSON.parse(data);
+            result(id, JSON.parse(data).status);
+        });
+    }
+
     this.RequestVersion = function (result) {
         return this.API_Request('/api/host/getVersion.json', function (data) {
             var fbResponse = JSON.parse(data);
@@ -120,7 +127,7 @@ this.Login = function (Host, User, Pass, Done) {
     }.bind(this);
 
     var Callback_Error = function (err) {
-        this.isConnected (false);
+        this.isConnected = false;
         Error = "Error at Login:" + err;
         Done(this.isConnected);
     }.bind(this);

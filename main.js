@@ -9,17 +9,23 @@ var utils =    require(__dirname + '/lib/utils'); // Get common adapter utils
 var ZoneMinder = require(__dirname + '/zoneminder');
 var Zone = new ZoneMinder();
 
+var StateStrings = ['idle','prealarm','alarm','alert','tape'];
+
+
 // you have to call the adapter function and pass a options object
 // name has to be set and has to be equal to adapters folder name and main file name excluding extension
 // adapter will be restarted automatically every time as the configuration changed, e.g system.adapter.template.0
 var adapter = utils.adapter('zoneminder');
 
-var IntervalObj;
+var UpdateMonitorsObj;
+var UpdateMonitorsStateObj;
 
 // is called when adapter shuts down - callback has to be called under any circumstances!
 adapter.on('unload', function (callback) {
 
-    clearInterval(IntervalObj);
+    clearInterval(UpdateMonitorsObj);
+    clearInterval(UpdateMonitorsStateObj);
+
     Zone.Connected = false;
     try {
         adapter.log.info('cleaned everything up...');
@@ -82,6 +88,9 @@ function main() {
     adapter.log.info('config user: ' + adapter.config.user);
     adapter.log.info('config pass: ' + adapter.config.password);
 
+    var LocalMonitorNames = [];
+    var LocalMonitorObjects = [];
+    var LocalMonitorIDs = [];
 
     adapter.setObject('Connected', {
         type: 'state',
@@ -117,7 +126,7 @@ function main() {
         native: {}
     });
 
-    function intervalFunc () {
+    function UpdateMonitors () {
         if (!Zone.isConnected) {
             Zone.Login(adapter.config.host,adapter.config.user,adapter.config.password, function(Result){
                 adapter.setState("Connected", {val: Result, ack: true});
@@ -134,28 +143,71 @@ function main() {
         }
          else  {
             Zone.RequestMonitorsList(AddMonitor);
+            LocalMonitorIDs.forEach(function (V) {
+                Zone.RequestMonitorState(V, UpdateState);
+            });
         }
     }
 
-    IntervalObj = setInterval(intervalFunc, adapter.config.polling);
+    UpdateMonitorsObj = setInterval(UpdateMonitors, adapter.config.pollingMon * 1000 * 60);
+    UpdateMonitorsStateObj = setInterval(UpdateMonitors, adapter.config.pollingMonStates * 1000);
+
+
+function UpdateState(id,state) {
+    var index = LocalMonitorIDs.indexOf(id);
+    if (index > -1) {
+        var Obj = LocalMonitorObjects[index];
+        if (Obj.Enabled == 1)
+            adapter.setState(LocalMonitorNames[index]+'.States.State',StateStrings[state]);
+        else
+            adapter.setState(LocalMonitorNames[index]+'.States.State',"Monitor disabled");
+
+    }
+
+  //  console.log("id "+id+ " Status "+state);
+}
+
 
 
 function AddMonitor(Mon) {
 
+    var pushed = false;
     adapter.setObjectNotExists('Monitors.'+Mon.Name, {
         type: 'device',
         common: {
             name: Mon.Name,
-            type: typeof attrValue ,
+            type: 'string',
+            role: 'indicator'
+        },
+        native: {}
+    });
+   // });
+
+
+    adapter.setObjectNotExists('Monitors.'+Mon.Name+'.States', {
+        type: 'channel',
+        common: {
+            name: 'Stati',
+            type: 'string' ,
             role: 'indicator'
         },
         native: {}
     });
 
+    adapter.setObjectNotExists('Monitors.'+Mon.Name+'.States.State', {
+        type: 'state',
+        common: {
+            name: 'Status',
+            type: 'integer',
+            role: 'indicator'
+        },
+        native: {}
+    });
+
+
     for (var key in Mon) {
         var attrName = key;
         var attrValue = Mon[key];
-
         adapter.setObjectNotExists('Monitors.'+Mon.Name+"."+attrName, {
             type: 'state',
             common: {
@@ -167,6 +219,11 @@ function AddMonitor(Mon) {
         });
 
         adapter.setState('Monitors.'+Mon.Name+"."+attrName, {val: attrValue, ack: true});
+        if ((key == 'Id') & (LocalMonitorIDs.indexOf(Mon[key]) == -1) ) {
+            LocalMonitorObjects.push(Mon);
+            LocalMonitorIDs.push(Mon[key]);
+            LocalMonitorNames.push('Monitors.'+Mon.Name);
+        }
     }
 }
 

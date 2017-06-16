@@ -44,7 +44,8 @@
         "host": "localhost",
         "user": "admin",
         "password" : "admin",
-        "polling" : 5000
+        "pollingMon" : 5,
+        "pollingMonState" : 1
     },
     "objects": [
 
