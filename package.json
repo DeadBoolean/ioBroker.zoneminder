@@ -4,12 +4,12 @@
   "description": "ioBroker ZoneMinder Adapter",
   "author": {
     "name": "DeadBoolean",
-    "email": "sascha@wedler-online.de"
+    "email": "deadboolean@wedler-online.de"
   },
   "contributors": [
     {
       "name": "DeadBoolean",
-      "email": "sascha@wedler-online.de"
+      "email": "deadboolean@wedler-online.de"
     }
   ],
   "homepage": "https://github.com/DeadBoolean/ioBroker.zoneminder",
