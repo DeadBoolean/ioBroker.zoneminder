@@ -173,7 +173,9 @@ function UpdateState(id,state) {
 
 function AddMonitor(Mon) {
 
-    var pushed = false;
+
+
+
     adapter.setObjectNotExists('Monitors.'+Mon.Name, {
         type: 'device',
         common: {
@@ -208,25 +210,31 @@ function AddMonitor(Mon) {
 
 
     for (var key in Mon) {
-        var attrName = key;
-        var attrValue = Mon[key];
-        adapter.setObjectNotExists('Monitors.'+Mon.Name+"."+attrName, {
-            type: 'state',
-            common: {
-                name: attrName,
-                type: typeof attrValue ,
-                role: 'indicator'
-            },
-            native: {}
-        });
+        index = LocalMonitorIDs.indexOf(Mon['Id']);
 
-        adapter.setState('Monitors.'+Mon.Name+"."+attrName, {val: attrValue, ack: true});
-        if ((key == 'Id') & (LocalMonitorIDs.indexOf(Mon[key]) == -1) ) {
-            LocalMonitorObjects.push(Mon);
-            LocalMonitorIDs.push(Mon[key]);
-            LocalMonitorNames.push('Monitors.'+Mon.Name);
+        if ((index > -1) & LocalMonitorObjects[key] != Mon[key] ) {
+
+            var attrName = key;
+            var attrValue = Mon[key];
+            adapter.setObjectNotExists('Monitors.'+Mon.Name+"."+attrName, {
+                type: 'state',
+                common: {
+                    name: attrName,
+                    type: typeof attrValue ,
+                    role: 'indicator'
+             },
+                native: {}
+           });
+
+            adapter.setState('Monitors.'+Mon.Name+"."+attrName, {val: attrValue, ack: true});
+            if ((key == 'Id') & (LocalMonitorIDs.indexOf(Mon[key]) == -1) ) {
+                LocalMonitorObjects.push(Mon);
+                LocalMonitorIDs.push(Mon[key]);
+                LocalMonitorNames.push('Monitors.'+Mon.Name);
+            }
         }
     }
+    
 }
 
 
