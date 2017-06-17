@@ -187,10 +187,9 @@ this.getError = function () {
 }
 
 this.Send = function(id,value, monitorID) {
-//    curl -XPOST http://server/zm/api/monitors/1.json -d "Monitor[Function]=Modect&Monitor[Enabled]=1"
-    monitorID = 9;
+
     var post_data = "Monitor["+id+"]="+value;
-    //var post_data = 'Monitor[Enabled]=1';
+
     var http = require( "http" );
     var options = {
         hostname: parsedurl.hostname,

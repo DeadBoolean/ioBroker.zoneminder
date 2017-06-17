@@ -49,7 +49,7 @@ adapter.on('stateChange', function (id, state) {
     // you can use the ack flag to detect if it is status (true) or command (false)
     if (!state.ack) {
         adapter.getObject(id, function (err, obj) {
-            if (obj & obj.common.write) {
+            if (obj) {
                 var Monitor = id.replace('.' + obj.common.name, '');
                 adapter.getState(Monitor+'.Id',function (err, state2) {
                     if (state) {
@@ -169,7 +169,7 @@ function UpdateState(id,state) {
 
     }
 
-  //  console.log("id "+id+ " Status "+state);
+
 }
 
 
