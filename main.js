@@ -153,6 +153,7 @@ function main() {
     UpdateMonitorsObj = setInterval(UpdateMonitors, adapter.config.pollingMon * 1000 * 60);
     UpdateMonitorsStateObj = setInterval(UpdateMonitorsStates, adapter.config.pollingMonStates * 1000);
 
+    UpdateMonitors(); // Initial
 
 function UpdateState(id,state) {
     var index = LocalMonitorIDs.indexOf(id);
