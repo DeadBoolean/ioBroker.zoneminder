@@ -133,6 +133,7 @@ function main() {
                     if (!Zone.RequestVersion(function () {
                             adapter.setState("ZoneMinder_api_version", {val: Zone.API_Version(), ack: true});
                             adapter.setState("ZoneMinder_version", {val: Zone.Version(), ack: true});
+                            Zone.RequestMonitorsList(AddMonitor);
                         }))
                         adapter.log.error(Zone.getError());
                     }
@@ -150,10 +151,12 @@ function main() {
         });
     }
 
-    UpdateMonitorsObj = setInterval(UpdateMonitors, adapter.config.pollingMon * 1000 * 60);
-    UpdateMonitorsStateObj = setInterval(UpdateMonitorsStates, adapter.config.pollingMonStates * 1000);
+    UpdateMonitors();
 
-    UpdateMonitors(); // Initial
+    UpdateMonitorsObj = setInterval(UpdateMonitors, adapter.config.pollingMon * 1000 * 60);
+    UpdateMonitorsStateObj = setInterval(UpdateMonitorsStates, adapter.config.pollingMonState * 1000);
+
+    //UpdateMonitors(); // Initial
 
 function UpdateState(id,state) {
     var index = LocalMonitorIDs.indexOf(id);
@@ -174,45 +177,49 @@ function UpdateState(id,state) {
 function AddMonitor(Mon) {
 
 
+   var index = LocalMonitorIDs.indexOf(Mon['Id']);
+    if (index == -1) {
+
+        adapter.setObjectNotExists('Monitors.' + Mon.Name, {
+            type: 'device',
+            common: {
+                name: Mon.Name,
+                type: 'string',
+                role: 'indicator'
+            },
+            native: {}
+        });
+        // });
 
 
-    adapter.setObjectNotExists('Monitors.'+Mon.Name, {
-        type: 'device',
-        common: {
-            name: Mon.Name,
-            type: 'string',
-            role: 'indicator'
-        },
-        native: {}
-    });
-   // });
+        adapter.setObjectNotExists('Monitors.' + Mon.Name + '.States', {
+            type: 'channel',
+            common: {
+                name: 'Stati',
+                type: 'string',
+                role: 'indicator'
+            },
+            native: {}
+        });
 
-
-    adapter.setObjectNotExists('Monitors.'+Mon.Name+'.States', {
-        type: 'channel',
-        common: {
-            name: 'Stati',
-            type: 'string' ,
-            role: 'indicator'
-        },
-        native: {}
-    });
-
-    adapter.setObjectNotExists('Monitors.'+Mon.Name+'.States.State', {
-        type: 'state',
-        common: {
-            name: 'Status',
-            type: 'integer',
-            role: 'indicator'
-        },
-        native: {}
-    });
-
+        adapter.setObjectNotExists('Monitors.' + Mon.Name + '.States.State', {
+            type: 'state',
+            common: {
+                name: 'Status',
+                type: 'integer',
+                role: 'indicator'
+            },
+            native: {}
+        });
+    }
 
     for (var key in Mon) {
-        index = LocalMonitorIDs.indexOf(Mon['Id']);
 
-        if ((index > -1) & LocalMonitorObjects[key] != Mon[key] ) {
+
+        if ((index == -1) || (LocalMonitorObjects[index][key] != Mon[key] )) {
+
+            if (index > -1)
+                LocalMonitorObjects[index][key] = Mon[key];
 
             var attrName = key;
             var attrValue = Mon[key];
@@ -234,7 +241,7 @@ function AddMonitor(Mon) {
             }
         }
     }
-    
+
 }
 
 
