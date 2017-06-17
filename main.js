@@ -52,8 +52,13 @@ adapter.on('stateChange', function (id, state) {
             if (obj) {
                 var Monitor = id.replace('.' + obj.common.name, '');
                 adapter.getState(Monitor+'.Id',function (err, state2) {
-                    if (state) {
-                        Zone.Send(obj.common.name,state.val,state2.val);
+                    if (err)
+                        console.log(err);
+                    else
+                        if (state) {
+                            if ((state.val == null )|| (state2.val == null))
+                                console.log("val val");
+                            Zone.Send(obj.common.name,state.val,state2.val);
                     }
                 });
             }
@@ -125,8 +130,10 @@ function main() {
 
     function UpdateMonitors () {
         if (!Zone.isConnected) {
+            console.log('Connecting...');
             Zone.Login(adapter.config.host,adapter.config.user,adapter.config.password, function(Result){
                 adapter.setState("Connected", {val: Result, ack: true});
+                console.log(Result);
                 if (!Result)
                     adapter.log.error(Zone.getError());
                 else {
@@ -146,27 +153,44 @@ function main() {
     }
 
     function UpdateMonitorsStates () {
-        LocalMonitorIDs.forEach(function (V) {
-            Zone.RequestMonitorState(V, UpdateState);
-        });
+        try {
+            LocalMonitorIDs.forEach(function (V) {
+                Zone.RequestMonitorState(V, UpdateState);
+            });
+
+        }
+        catch (err) {
+            console.log(err);
+        }
     }
 
-    UpdateMonitors();
+
 
     UpdateMonitorsObj = setInterval(UpdateMonitors, adapter.config.pollingMon * 1000 * 60);
     UpdateMonitorsStateObj = setInterval(UpdateMonitorsStates, adapter.config.pollingMonState * 1000);
 
-    //UpdateMonitors(); // Initial
+    UpdateMonitors(); // Initial
 
 function UpdateState(id,state) {
-    var index = LocalMonitorIDs.indexOf(id);
-    if (index > -1) {
-        var Obj = LocalMonitorObjects[index];
-        if (Obj.Enabled == 1)
-            adapter.setState(LocalMonitorNames[index]+'.States.State',StateStrings[state]);
-        else
-            adapter.setState(LocalMonitorNames[index]+'.States.State',"Monitor disabled");
 
+
+    try {
+        var index = LocalMonitorIDs.indexOf(id);
+
+        if (index > -1) {
+            var Obj = LocalMonitorObjects[index];
+
+            if (Obj.Enabled == 1) {
+                adapter.setState(LocalMonitorNames[index] + '.States.State', StateStrings[state]);
+            }
+            else {
+                adapter.setState(LocalMonitorNames[index] + '.States.State', "Monitor disabled",true);
+            }
+
+        }
+    }
+    catch (err) {
+        console.log(err);
     }
 
 
@@ -244,12 +268,6 @@ function AddMonitor(Mon) {
 
 }
 
-
-    // in this template all states changes inside the adapters namespace are subscribed
     adapter.subscribeStates('*');
-
-    // examples for the checkPassword/checkGroup functions
-
-
 
 }

@@ -32,7 +32,7 @@ function ZoneMinder() {
                 Error = "Can't request "+URL+". Not connected...";
                 return false;
             }
-        else {
+        else try {
             http_options.path = parsedurl.path + URL;
             http_options.headers = {
                 'User-Agent': 'iobroker.zoneminder',
@@ -75,7 +75,9 @@ function ZoneMinder() {
             request.end();
             return true;
         }
-
+        catch (err) {
+            console.log(err);
+        }
 
     }
 
