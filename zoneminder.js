@@ -12,6 +12,7 @@ var setcookie;
 var CookieAllInOne = "";
 var http = require( "http" );
 
+
 var Error = "";
 
 module.exports = ZoneMinder;
@@ -96,6 +97,17 @@ function ZoneMinder() {
             result();
         });
     }
+
+    this.ForceAlarm = function (MonZMId, value, result) {
+        if (value)
+            OnOffStr = 'on';
+        else
+            OnOffStr = 'off';
+        return this.API_Request('/api/monitors/alarm/id:'+MonZMId+'/command:'+OnOffStr +'.json', function (data) {
+            if (result) result();
+        });
+    }
+
 
     this.RequestMonitorsList = function (result) {
         return this.API_Request('/api/monitors.json', function (data) {

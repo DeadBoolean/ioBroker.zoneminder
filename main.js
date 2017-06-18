@@ -44,23 +44,19 @@ adapter.on('objectChange', function (id, obj) {
 // is called if a subscribed state changes
 adapter.on('stateChange', function (id, state) {
     // Warning, state can be null if it was deleted
-//    adapter.log.info('stateChange ' + id + ' ' + JSON.stringify(state));
-
-    // you can use the ack flag to detect if it is status (true) or command (false)
-    if (!state.ack) {
+    if (state && !state.ack) {
         adapter.getObject(id, function (err, obj) {
             if (obj) {
-                var Monitor = id.replace('.' + obj.common.name, '');
-                adapter.getState(Monitor+'.Id',function (err, state2) {
-                    if (err)
-                        console.log(err);
-                    else
-                        if (state) {
-                            if ((state.val == null )|| (state2.val == null))
-                                console.log("val val");
-                            Zone.Send(obj.common.name,state.val,state2.val);
-                    }
-                });
+                switch (obj.common.statetyp) {
+                    case "alarm" :
+                        Zone.ForceAlarm  (obj.common.parentMonZMId, state.val);
+                        break;
+                    case "monitor" :
+                        Zone.Send(obj.common.name,state.val,obj.common.parentMonZMId);
+                        break;
+                }
+
+
             }
         });
     }
@@ -209,19 +205,21 @@ function AddMonitor(Mon) {
             common: {
                 name: Mon.Name,
                 type: 'string',
-                role: 'indicator'
+                role: 'indicator',
+                MonID : Mon['Id'],
+                write : false
             },
             native: {}
         });
         // });
-
 
         adapter.setObjectNotExists('Monitors.' + Mon.Name + '.States', {
             type: 'channel',
             common: {
                 name: 'Stati',
                 type: 'string',
-                role: 'indicator'
+                role: 'indicator',
+                write : false
             },
             native: {}
         });
@@ -231,11 +229,38 @@ function AddMonitor(Mon) {
             common: {
                 name: 'Status',
                 type: 'integer',
+                role: 'indicator',
+                write: false
+            },
+            native: {}
+        });
+
+        adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Alarm', {
+            type: 'channel',
+            common: {
+                name: 'Alarm',
+                type: 'string',
                 role: 'indicator'
             },
             native: {}
         });
+
+        adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Alarm.Force', {
+            type: 'state',
+            common: {
+                name: 'Alarm erzwingen',
+                type: 'boolean',
+                role: 'action',
+                parentMonId : 'Monitors.' + Mon.Name,
+                parentMonZMId : Mon['Id'],
+                statetyp : "alarm"
+            },
+            native: {
+
+            }
+        });
     }
+
 
     for (var key in Mon) {
 
@@ -252,7 +277,11 @@ function AddMonitor(Mon) {
                 common: {
                     name: attrName,
                     type: typeof attrValue ,
-                    role: 'indicator'
+                    role: 'indicator',
+                    parentMonId : 'Monitors.' + Mon.Name,
+                    parentMonZMId : Mon['Id'],
+                    statetyp : "monitor"
+
              },
                 native: {}
            });
