@@ -250,7 +250,7 @@ function AddMonitor(Mon) {
             common: {
                 name: 'Alarm erzwingen',
                 type: 'boolean',
-                role: 'action',
+                role: 'state',
                 parentMonId : 'Monitors.' + Mon.Name,
                 parentMonZMId : Mon['Id'],
                 statetyp : "alarm"
