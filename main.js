@@ -18,7 +18,7 @@ var StateStrings = ['idle','prealarm','alarm','alert','tape'];
 var adapter = utils.adapter('zoneminder');
 
 var UpdateMonitorsObj;
-var UpdateMonitorsStateObj;
+var UpdateMonitorsStateObj = null;
 
 // is called when adapter shuts down - callback has to be called under any circumstances!
 adapter.on('unload', function (callback) {
@@ -181,7 +181,7 @@ function UpdateState(id,state) {
             var Obj = LocalMonitorObjects[index];
 
             if (Obj.Enabled == 1) {
-                adapter.setState(LocalMonitorNames[index] + '.States.State', StateStrings[state]);
+                adapter.setState(LocalMonitorNames[index] + '.States.State', StateStrings[state],true);
             }
             else {
                 adapter.setState(LocalMonitorNames[index] + '.States.State', "Monitor disabled",true);
