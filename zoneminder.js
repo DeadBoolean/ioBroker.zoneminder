@@ -13,6 +13,10 @@ var CookieAllInOne = "";
 var http = require( "http" );
 
 
+var Zones = require(__dirname + '/zones');
+
+
+
 var Error = "";
 
 module.exports = ZoneMinder;
@@ -24,6 +28,13 @@ function ZoneMinder() {
     this._Version;
     this._API_Version;
     this.isConnected = false;
+
+    var Monitors = require(__dirname + '/monitors');
+    var Monitors = new Monitors();
+
+    this.Monitors = function () {
+        return Monitors;
+    }
 
 
     this.API_Request = function(URL,Callback) {
@@ -85,8 +96,14 @@ function ZoneMinder() {
     this.RequestMonitorState = function(id,result) {
         return this.API_Request('/api/monitors/alarm/id:'+id+'/command:status.json', function (data) {
             var fbResponse = JSON.parse(data);
-            result(id, JSON.parse(data).status);
-        });
+            var Index = this.Monitors().GetIndexByZoneMinderID(id);
+            var ActState = JSON.parse(data).status;
+            if (this.Monitors().GetState(Index) != ActState) {
+                this.Monitors().SetState(Index, ActState);
+                result(id, ActState);
+            }
+
+        }.bind(this));
     }
 
     this.RequestVersion = function (result) {
@@ -96,6 +113,25 @@ function ZoneMinder() {
             _API_Version = fbResponse.apiversion;
             result();
         });
+    }
+
+    this.RequestZones = function (onZoneChange) {
+        return this.API_Request('/api/zones.json', function (data) {
+        //console.log("STATUS:" + response.statusCode);
+        //console.log("  DATA:" + data);
+            var fbResponse = JSON.parse(data);
+            for (var i = 0; i < fbResponse.zones.length; i++) {
+                var Zones = this.Monitors().GetZonesByZoneMinderID(fbResponse.zones[i].Zone.MonitorId);
+                if (Zones)
+                    Zones.AddOrUpdate(fbResponse.zones[i].Zone, function (key, value) {
+                        if (onZoneChange)
+                            onZoneChange(this.Monitors().GetByZoneMinderID(fbResponse.zones[i].Zone.MonitorId), fbResponse.zones[i].Zone, key, value);
+
+                        //this.MonitorZones.AddOrUpdate(fbResponse.zones[i].Zone);
+                        //result(fbResponse.zones[i].Zone);
+                    }.bind(this));
+            }
+        }.bind(this));
     }
 
     this.ForceAlarm = function (MonZMId, value, result) {
@@ -109,16 +145,21 @@ function ZoneMinder() {
     }
 
 
-    this.RequestMonitorsList = function (result) {
+    this.RequestMonitorsList = function (onStateChange, onDone) {
+
         return this.API_Request('/api/monitors.json', function (data) {
             //console.log("STATUS:" + response.statusCode);
             //console.log("  DATA:" + data);
             var fbResponse = JSON.parse(data);
             for (var i = 0; i < fbResponse.monitors.length; i++) {
-                result(fbResponse.monitors[i].Monitor);
+                Monitors.AddOrUpdate(fbResponse.monitors[i].Monitor,onStateChange)
+                //result(fbResponse.monitors[i].Monitor);
+            if (onDone)
+                onDone();
+
             }
 
-        });
+        }.bind(this));
     }
 
 

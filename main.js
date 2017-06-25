@@ -9,6 +9,7 @@ var utils =    require(__dirname + '/lib/utils'); // Get common adapter utils
 var ZoneMinder = require(__dirname + '/zoneminder');
 var Zone = new ZoneMinder();
 
+
 var StateStrings = ['idle','prealarm','alarm','alert','tape'];
 
 
@@ -38,12 +39,21 @@ adapter.on('unload', function (callback) {
 // is called if a subscribed object changes
 adapter.on('objectChange', function (id, obj) {
     // Warning, obj can be null if it was deleted
-    adapter.log.info('objectChange ' + id + ' ' + JSON.stringify(obj));
+
+    if (obj == null) {
+
+        id = id.replace(adapter.name+'.'+adapter.instance+'.Monitors.','');
+        var index = Zone.Monitors().GetIndexByMonitorName(id);
+        if (index > -1)
+            Zone.Monitors().Delete(index);
+    }
 });
 
 // is called if a subscribed state changes
 adapter.on('stateChange', function (id, state) {
     // Warning, state can be null if it was deleted
+
+
     if (state && !state.ack) {
         adapter.getObject(id, function (err, obj) {
             if (obj) {
@@ -136,30 +146,27 @@ function main() {
                     if (!Zone.RequestVersion(function () {
                             adapter.setState("ZoneMinder_api_version", {val: Zone.API_Version(), ack: true});
                             adapter.setState("ZoneMinder_version", {val: Zone.Version(), ack: true});
-                            Zone.RequestMonitorsList(AddMonitor);
+                            Zone.RequestMonitorsList(onMonitorStateChange, onMonitorUpdateDone);
                         }))
                         adapter.log.error(Zone.getError());
                     }
                 });
         }
          else  {
-            Zone.RequestMonitorsList(AddMonitor);
+            Zone.RequestMonitorsList(onMonitorStateChange,onMonitorUpdateDone);
 
         }
     }
 
     function UpdateMonitorsStates () {
         try {
-            LocalMonitorIDs.forEach(function (V) {
-                Zone.RequestMonitorState(V, UpdateState);
-            });
-
+            for (var i = 0; i < Zone.Monitors().Count(); i++)
+                Zone.RequestMonitorState(Zone.Monitors().Get(i).Id, UpdateState);
         }
         catch (err) {
             console.log(err);
         }
     }
-
 
 
     UpdateMonitorsObj = setInterval(UpdateMonitors, adapter.config.pollingMon * 1000 * 60);
@@ -171,19 +178,16 @@ function UpdateState(id,state) {
 
 
     try {
-        var index = LocalMonitorIDs.indexOf(id);
+        var Obj = Zone.Monitors().GetByZoneMinderID(id);
 
-        if (index > -1) {
-            var Obj = LocalMonitorObjects[index];
-
-            if (Obj.Enabled == 1) {
-                adapter.setState(LocalMonitorNames[index] + '.States.State', StateStrings[state],true);
-            }
-            else {
-                adapter.setState(LocalMonitorNames[index] + '.States.State', "Monitor disabled",true);
-            }
-
+        if (Obj.Enabled == 1) {
+            adapter.setState('Monitors.'+Obj.Name + '.States.State', StateStrings[state],true);
         }
+        else {
+            adapter.setState('Monitors.'+Obj.Name + '.States.State', "Monitor disabled",true);
+        }
+
+
     }
     catch (err) {
         console.log(err);
@@ -192,111 +196,145 @@ function UpdateState(id,state) {
 
 }
 
+function onZoneChange(Mon, Zone, key, value, initial) {
 
+    adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Zones.Zone_'+Zone.Id, {
+        type: 'channel',
+        common: {
+            name: 'Zonen',
+            type: 'string',
+            role: 'indicator',
+            write : false
+        },
+        native: {}
+    });
 
-function AddMonitor(Mon) {
+    adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Zones.Zone_'+Zone.Id+'.'+key, {
+        type: 'channel',
+        common: {
+            name: 'Zone',
+            type: typeof value,
+            role: 'indicator',
+            write : false
+        },
+        native: {}
+    });
 
-
-   var index = LocalMonitorIDs.indexOf(Mon['Id']);
-    if (index == -1) {
-
-        adapter.setObjectNotExists('Monitors.' + Mon.Name, {
-            type: 'device',
-            common: {
-                name: Mon.Name,
-                type: 'string',
-                role: 'indicator',
-                MonID : Mon['Id'],
-                write : false
-            },
-            native: {}
-        });
-        // });
-
-        adapter.setObjectNotExists('Monitors.' + Mon.Name + '.States', {
-            type: 'channel',
-            common: {
-                name: 'Stati',
-                type: 'string',
-                role: 'indicator',
-                write : false
-            },
-            native: {}
-        });
-
-        adapter.setObjectNotExists('Monitors.' + Mon.Name + '.States.State', {
-            type: 'state',
-            common: {
-                name: 'Status',
-                type: 'integer',
-                role: 'indicator',
-                write: false
-            },
-            native: {}
-        });
-
-        adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Alarm', {
-            type: 'channel',
-            common: {
-                name: 'Alarm',
-                type: 'string',
-                role: 'indicator'
-            },
-            native: {}
-        });
-
-        adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Alarm.Force', {
-            type: 'state',
-            common: {
-                name: 'Alarm erzwingen',
-                type: 'boolean',
-                role: 'state',
-                parentMonId : 'Monitors.' + Mon.Name,
-                parentMonZMId : Mon['Id'],
-                statetyp : "alarm"
-            },
-            native: {
-
-            }
-        });
-    }
-
-
-    for (var key in Mon) {
-
-
-        if ((index == -1) || (LocalMonitorObjects[index][key] != Mon[key] )) {
-
-            if (index > -1)
-                LocalMonitorObjects[index][key] = Mon[key];
-
-            var attrName = key;
-            var attrValue = Mon[key];
-            adapter.setObjectNotExists('Monitors.'+Mon.Name+"."+attrName, {
-                type: 'state',
-                common: {
-                    name: attrName,
-                    type: typeof attrValue ,
-                    role: 'indicator',
-                    parentMonId : 'Monitors.' + Mon.Name,
-                    parentMonZMId : Mon['Id'],
-                    statetyp : "monitor"
-
-             },
-                native: {}
-           });
-
-            adapter.setState('Monitors.'+Mon.Name+"."+attrName, {val: attrValue, ack: true});
-            if ((key == 'Id') & (LocalMonitorIDs.indexOf(Mon[key]) == -1) ) {
-                LocalMonitorObjects.push(Mon);
-                LocalMonitorIDs.push(Mon[key]);
-                LocalMonitorNames.push('Monitors.'+Mon.Name);
-            }
-        }
-    }
+    adapter.setState('Monitors.' + Mon.Name + '.Zones.Zone_'+Zone.Id+'.'+key,value,true);
 
 }
 
+
+function onMonitorUpdateDone() {
+    Zone.RequestZones(onZoneChange);
+}
+
+function onMonitorStateChange(Mon, key, value,initial) {
+
+    adapter.setObjectNotExists('Monitors.' + Mon.Name, {
+        type: 'device',
+        common: {
+            name: Mon.Name,
+            type: 'string',
+            role: 'indicator',
+            MonID : Mon['Id'],
+            write : false
+        },
+        native: {}
+    });
+    // });
+
+    adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Zones', {
+        type: 'channel',
+        common: {
+            name: 'Stati',
+            type: 'string',
+            role: 'indicator',
+            write : false
+        },
+        native: {}
+    });
+
+
+    adapter.setObjectNotExists('Monitors.' + Mon.Name + '.States', {
+        type: 'channel',
+        common: {
+            name: 'Stati',
+            type: 'string',
+            role: 'indicator',
+            write : false
+        },
+        native: {}
+    });
+
+    adapter.setObjectNotExists('Monitors.' + Mon.Name + '.States.State', {
+        type: 'state',
+        common: {
+            name: 'Status',
+            type: 'integer',
+            role: 'indicator',
+            write: false
+        },
+        native: {}
+    });
+    adapter.setState('Monitors.' + Mon.Name + '.States.State', {val: '', ack: true});
+
+    adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Alarm', {
+        type: 'channel',
+        common: {
+            name: 'Alarm',
+            type: 'string',
+            role: 'indicator'
+        },
+        native: {}
+    });
+
+    adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Alarm.Force', {
+        type: 'state',
+        common: {
+            name: 'Alarm erzwingen',
+            type: 'boolean',
+            role: 'state',
+            parentMonId : 'Monitors.' + Mon.Name,
+            parentMonZMId : Mon['Id'],
+            statetyp : "alarm"
+        },
+        native: {
+
+        }
+    });
+
+
+    adapter.setObjectNotExists('Monitors.'+Mon.Name+"."+key, {
+        type: 'state',
+        common: {
+            name: key,
+            type: typeof value ,
+            role: 'indicator',
+            parentMonId : 'Monitors.' + Mon.Name,
+            parentMonZMId : Mon['Id'],
+            statetyp : "monitor"
+
+        },
+        native: {}
+    });
+
+
+    if (initial)
+        adapter.getState('Monitors.'+Mon.Name+"."+key,function (err, state) {
+           if (!err)
+               if ((state == null) || (state.val != value))
+               {
+
+                   adapter.setState('Monitors.'+Mon.Name+"."+key, {val: value, ack: true});
+               }
+        })
+    else
+        adapter.setState('Monitors.'+Mon.Name+"."+key, {val: value, ack: true});
+}
+
+
     adapter.subscribeStates('*');
+    adapter.subscribeObjects('*');
 
 }
