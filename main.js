@@ -62,7 +62,10 @@ adapter.on('stateChange', function (id, state) {
                         Zone.ForceAlarm  (obj.common.parentMonZMId, state.val);
                         break;
                     case "monitor" :
-                        Zone.Send(obj.common.name,state.val,obj.common.parentMonZMId);
+                        Zone.Send_MonitorState (obj.common.name,state.val,obj.common.parentMonZMId);
+                        break;
+                    case "zone" :
+                        Zone.Send_ZoneState (obj.common.name,state.val,obj.common.parentZoneZMId);
                         break;
                 }
 
@@ -201,21 +204,24 @@ function onZoneChange(Mon, Zone, key, value, initial) {
     adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Zones.Zone_'+Zone.Id, {
         type: 'channel',
         common: {
-            name: 'Zonen',
+            name: Zone.Name,
             type: 'string',
             role: 'indicator',
-            write : false
+            write : true
         },
         native: {}
     });
 
     adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Zones.Zone_'+Zone.Id+'.'+key, {
-        type: 'channel',
+        type: 'state',
         common: {
-            name: 'Zone',
+            name: key,
             type: typeof value,
             role: 'indicator',
-            write : false
+            write : 'true',
+            parentZoneMonId : 'Monitors.' + Mon.Name,
+            parentZoneZMId : Zone['Id'],
+            statetyp : "zone"
         },
         native: {}
     });

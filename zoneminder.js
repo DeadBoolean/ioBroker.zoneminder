@@ -241,15 +241,17 @@ this.getError = function () {
         return Error;
 }
 
-this.Send = function(id,value, monitorID) {
 
-    var post_data = "Monitor["+id+"]="+value;
+
+this.Send = function(id,value, monitorID, url,keyword) {
+
+    var post_data = keyword+"["+id+"]="+value;
 
     var http = require( "http" );
     var options = {
         hostname: parsedurl.hostname,
         port: ( parsedurl.port || 80 ), // 80 by default
-        path: parsedurl.path+'/api/monitors/'+monitorID+'.json',
+        path: parsedurl.path+'/api/'+url,
         method: 'POST',
         headers: {
             'User-Agent': 'iobroker.zoneminder',
@@ -280,4 +282,16 @@ this.Send = function(id,value, monitorID) {
 
     console.log(post_data);
 }
+
+
+    this.Send_MonitorState = function(id,value, monitorID) {
+        this.Send(id,value, monitorID,'monitors/'+monitorID+'.json','Monitor');
+    }
+
+
+    this.Send_ZoneState = function (id,value, monitorID) {
+        this.Send(id,value, monitorID,'zones/'+monitorID+'.json','Zone');
+    }
+
+
 }
