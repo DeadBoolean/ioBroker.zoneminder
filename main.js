@@ -253,8 +253,8 @@ function onMonitorStateChange(Mon, key, value,initial) {
     adapter.setObjectNotExists('Monitors.' + Mon.Name + '.AccessUrl', {
         type: 'state',
         common: {
-            name: 'Status',
-            type: 'integer',
+            name: 'url',
+            type: 'string',
             role: 'indicator',
             write: false
         },
