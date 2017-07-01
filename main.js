@@ -184,10 +184,10 @@ function UpdateState(id,state) {
         var Obj = Zone.Monitors().GetByZoneMinderID(id);
 
         if (Obj.Enabled == 1) {
-            adapter.setState('Monitors.'+Obj.Name + '.States.State', StateStrings[state],true);
+            adapter.setState('Monitors.'+Obj.Name + '.Alarm.AlarmState', StateStrings[state],true);
         }
         else {
-            adapter.setState('Monitors.'+Obj.Name + '.States.State', "Monitor disabled",true);
+            adapter.setState('Monitors.'+Obj.Name + '.Alarm.AlarmState', "Monitor disabled",true);
         }
 
 
@@ -250,6 +250,23 @@ function onMonitorStateChange(Mon, key, value,initial) {
     });
     // });
 
+    adapter.setObjectNotExists('Monitors.' + Mon.Name + '.AccessUrl', {
+        type: 'state',
+        common: {
+            name: 'Status',
+            type: 'integer',
+            role: 'indicator',
+            write: false
+        },
+        native: {}
+    });
+
+
+    var S = adapter.config.host+'/cgi-bin/nph-zms?mode=jpeg&scale=100&maxfps=30&buffer=1000&monitor='+Mon.Id+'&user='+adapter.config.user+'&pass='+adapter.config.password;
+
+    adapter.setState('Monitors.' + Mon.Name + '.AccessUrl', {val: S, ack: true});
+
+
     adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Zones', {
         type: 'channel',
         common: {
@@ -261,7 +278,7 @@ function onMonitorStateChange(Mon, key, value,initial) {
         native: {}
     });
 
-
+    /*
     adapter.setObjectNotExists('Monitors.' + Mon.Name + '.States', {
         type: 'channel',
         common: {
@@ -284,7 +301,7 @@ function onMonitorStateChange(Mon, key, value,initial) {
         native: {}
     });
     adapter.setState('Monitors.' + Mon.Name + '.States.State', {val: '', ack: true});
-
+*/
     adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Alarm', {
         type: 'channel',
         common: {
@@ -309,6 +326,18 @@ function onMonitorStateChange(Mon, key, value,initial) {
 
         }
     });
+
+    adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Alarm.AlarmState', {
+        type: 'state',
+        common: {
+            name: 'Status',
+            type: 'integer',
+            role: 'indicator',
+            write: false
+        },
+        native: {}
+    });
+    adapter.setState('Monitors.' + Mon.Name + '.Alarm.AlarmState', {val: '', ack: true});
 
 
     adapter.setObjectNotExists('Monitors.'+Mon.Name+"."+key, {
