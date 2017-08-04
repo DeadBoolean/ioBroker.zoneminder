@@ -9,6 +9,7 @@ var utils =    require(__dirname + '/lib/utils'); // Get common adapter utils
 var ZoneMinder = require(__dirname + '/zoneminder');
 var Zone = new ZoneMinder();
 
+
 var StateStrings = ['idle','prealarm','alarm','alert','tape'];
 
 
@@ -18,7 +19,7 @@ var StateStrings = ['idle','prealarm','alarm','alert','tape'];
 var adapter = utils.adapter('zoneminder');
 
 var UpdateMonitorsObj;
-var UpdateMonitorsStateObj;
+var UpdateMonitorsStateObj = null;
 
 // is called when adapter shuts down - callback has to be called under any circumstances!
 adapter.on('unload', function (callback) {
@@ -38,24 +39,37 @@ adapter.on('unload', function (callback) {
 // is called if a subscribed object changes
 adapter.on('objectChange', function (id, obj) {
     // Warning, obj can be null if it was deleted
-    adapter.log.info('objectChange ' + id + ' ' + JSON.stringify(obj));
+
+    if (obj == null) {
+
+        id = id.replace(adapter.name+'.'+adapter.instance+'.Monitors.','');
+        var index = Zone.Monitors().GetIndexByMonitorName(id);
+        if (index > -1)
+            Zone.Monitors().Delete(index);
+    }
 });
 
 // is called if a subscribed state changes
 adapter.on('stateChange', function (id, state) {
     // Warning, state can be null if it was deleted
-//    adapter.log.info('stateChange ' + id + ' ' + JSON.stringify(state));
 
-    // you can use the ack flag to detect if it is status (true) or command (false)
-    if (!state.ack) {
+
+    if (state && !state.ack) {
         adapter.getObject(id, function (err, obj) {
-            if (obj & obj.common.write) {
-                var Monitor = id.replace('.' + obj.common.name, '');
-                adapter.getState(Monitor+'.Id',function (err, state2) {
-                    if (state) {
-                        Zone.Send(obj.common.name,state.val,state2.val);
-                    }
-                });
+            if (obj) {
+                switch (obj.common.statetyp) {
+                    case "alarm" :
+                        Zone.ForceAlarm  (obj.common.parentMonZMId, state.val);
+                        break;
+                    case "monitor" :
+                        Zone.Send_MonitorState (obj.common.name,state.val,obj.common.parentMonZMId);
+                        break;
+                    case "zone" :
+                        Zone.Send_ZoneState (obj.common.name,state.val,obj.common.parentZoneZMId);
+                        break;
+                }
+
+
             }
         });
     }
@@ -125,115 +139,237 @@ function main() {
 
     function UpdateMonitors () {
         if (!Zone.isConnected) {
+            console.log('Connecting...');
             Zone.Login(adapter.config.host,adapter.config.user,adapter.config.password, function(Result){
                 adapter.setState("Connected", {val: Result, ack: true});
+                console.log(Result);
                 if (!Result)
                     adapter.log.error(Zone.getError());
                 else {
                     if (!Zone.RequestVersion(function () {
                             adapter.setState("ZoneMinder_api_version", {val: Zone.API_Version(), ack: true});
                             adapter.setState("ZoneMinder_version", {val: Zone.Version(), ack: true});
+                            Zone.RequestMonitorsList(onMonitorStateChange, onMonitorUpdateDone);
                         }))
                         adapter.log.error(Zone.getError());
                     }
                 });
         }
          else  {
-            Zone.RequestMonitorsList(AddMonitor);
+            Zone.RequestMonitorsList(onMonitorStateChange,onMonitorUpdateDone);
 
         }
     }
 
     function UpdateMonitorsStates () {
-        LocalMonitorIDs.forEach(function (V) {
-            Zone.RequestMonitorState(V, UpdateState);
-        });
+        try {
+            for (var i = 0; i < Zone.Monitors().Count(); i++)
+                Zone.RequestMonitorState(Zone.Monitors().Get(i).Id, UpdateState);
+        }
+        catch (err) {
+            console.log(err);
+        }
     }
+
 
     UpdateMonitorsObj = setInterval(UpdateMonitors, adapter.config.pollingMon * 1000 * 60);
-    UpdateMonitorsStateObj = setInterval(UpdateMonitorsStates, adapter.config.pollingMonStates * 1000);
+    UpdateMonitorsStateObj = setInterval(UpdateMonitorsStates, adapter.config.pollingMonState * 1000);
 
+    UpdateMonitors(); // Initial
 
 function UpdateState(id,state) {
-    var index = LocalMonitorIDs.indexOf(id);
-    if (index > -1) {
-        var Obj = LocalMonitorObjects[index];
-        if (Obj.Enabled == 1)
-            adapter.setState(LocalMonitorNames[index]+'.States.State',StateStrings[state]);
-        else
-            adapter.setState(LocalMonitorNames[index]+'.States.State',"Monitor disabled");
+
+
+    try {
+        var Obj = Zone.Monitors().GetByZoneMinderID(id);
+
+        if (Obj.Enabled == 1) {
+            adapter.setState('Monitors.'+Obj.Name + '.Alarm.AlarmState', StateStrings[state],true);
+        }
+        else {
+            adapter.setState('Monitors.'+Obj.Name + '.Alarm.AlarmState', "Monitor disabled",true);
+        }
+
 
     }
+    catch (err) {
+        console.log(err);
+    }
 
-  //  console.log("id "+id+ " Status "+state);
+
+}
+
+function onZoneChange(Mon, Zone, key, value, initial) {
+
+    adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Zones.Zone_'+Zone.Id, {
+        type: 'channel',
+        common: {
+            name: Zone.Name,
+            type: 'string',
+            role: 'indicator',
+            write : true
+        },
+        native: {}
+    });
+
+    adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Zones.Zone_'+Zone.Id+'.'+key, {
+        type: 'state',
+        common: {
+            name: key,
+            type: typeof value,
+            role: 'indicator',
+            write : 'true',
+            parentZoneMonId : 'Monitors.' + Mon.Name,
+            parentZoneZMId : Zone['Id'],
+            statetyp : "zone"
+        },
+        native: {}
+    });
+
+    adapter.setState('Monitors.' + Mon.Name + '.Zones.Zone_'+Zone.Id+'.'+key,value,true);
+
 }
 
 
+function onMonitorUpdateDone() {
+    Zone.RequestZones(onZoneChange);
+}
 
-function AddMonitor(Mon) {
+function onMonitorStateChange(Mon, key, value,initial) {
 
-    var pushed = false;
-    adapter.setObjectNotExists('Monitors.'+Mon.Name, {
+    adapter.setObjectNotExists('Monitors.' + Mon.Name, {
         type: 'device',
         common: {
             name: Mon.Name,
+            type: 'string',
+            role: 'indicator',
+            MonID : Mon['Id'],
+            write : false
+        },
+        native: {}
+    });
+    // });
+
+    adapter.setObjectNotExists('Monitors.' + Mon.Name + '.AccessUrl', {
+        type: 'state',
+        common: {
+            name: 'url',
+            type: 'string',
+            role: 'indicator',
+            write: false
+        },
+        native: {}
+    });
+
+
+    var S = adapter.config.host+'/cgi-bin/nph-zms?mode=jpeg&scale=100&maxfps=30&buffer=1000&monitor='+Mon.Id+'&user='+adapter.config.user+'&pass='+adapter.config.password;
+
+    adapter.setState('Monitors.' + Mon.Name + '.AccessUrl', {val: S, ack: true});
+
+
+    adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Zones', {
+        type: 'channel',
+        common: {
+            name: 'Stati',
+            type: 'string',
+            role: 'indicator',
+            write : false
+        },
+        native: {}
+    });
+
+    /*
+    adapter.setObjectNotExists('Monitors.' + Mon.Name + '.States', {
+        type: 'channel',
+        common: {
+            name: 'Stati',
+            type: 'string',
+            role: 'indicator',
+            write : false
+        },
+        native: {}
+    });
+
+    adapter.setObjectNotExists('Monitors.' + Mon.Name + '.States.State', {
+        type: 'state',
+        common: {
+            name: 'Status',
+            type: 'integer',
+            role: 'indicator',
+            write: false
+        },
+        native: {}
+    });
+    adapter.setState('Monitors.' + Mon.Name + '.States.State', {val: '', ack: true});
+*/
+    adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Alarm', {
+        type: 'channel',
+        common: {
+            name: 'Alarm',
             type: 'string',
             role: 'indicator'
         },
         native: {}
     });
-   // });
 
-
-    adapter.setObjectNotExists('Monitors.'+Mon.Name+'.States', {
-        type: 'channel',
+    adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Alarm.Force', {
+        type: 'state',
         common: {
-            name: 'Stati',
-            type: 'string' ,
-            role: 'indicator'
+            name: 'Alarm erzwingen',
+            type: 'boolean',
+            role: 'state',
+            parentMonId : 'Monitors.' + Mon.Name,
+            parentMonZMId : Mon['Id'],
+            statetyp : "alarm"
         },
-        native: {}
+        native: {
+
+        }
     });
 
-    adapter.setObjectNotExists('Monitors.'+Mon.Name+'.States.State', {
+    adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Alarm.AlarmState', {
         type: 'state',
         common: {
             name: 'Status',
             type: 'integer',
-            role: 'indicator'
+            role: 'indicator',
+            write: false
+        },
+        native: {}
+    });
+    adapter.setState('Monitors.' + Mon.Name + '.Alarm.AlarmState', {val: '', ack: true});
+
+
+    adapter.setObjectNotExists('Monitors.'+Mon.Name+"."+key, {
+        type: 'state',
+        common: {
+            name: key,
+            type: typeof value ,
+            role: 'indicator',
+            parentMonId : 'Monitors.' + Mon.Name,
+            parentMonZMId : Mon['Id'],
+            statetyp : "monitor"
+
         },
         native: {}
     });
 
 
-    for (var key in Mon) {
-        var attrName = key;
-        var attrValue = Mon[key];
-        adapter.setObjectNotExists('Monitors.'+Mon.Name+"."+attrName, {
-            type: 'state',
-            common: {
-                name: attrName,
-                type: typeof attrValue ,
-                role: 'indicator'
-            },
-            native: {}
-        });
+    if (initial)
+        adapter.getState('Monitors.'+Mon.Name+"."+key,function (err, state) {
+           if (!err)
+               if ((state == null) || (state.val != value))
+               {
 
-        adapter.setState('Monitors.'+Mon.Name+"."+attrName, {val: attrValue, ack: true});
-        if ((key == 'Id') & (LocalMonitorIDs.indexOf(Mon[key]) == -1) ) {
-            LocalMonitorObjects.push(Mon);
-            LocalMonitorIDs.push(Mon[key]);
-            LocalMonitorNames.push('Monitors.'+Mon.Name);
-        }
-    }
+                   adapter.setState('Monitors.'+Mon.Name+"."+key, {val: value, ack: true});
+               }
+        })
+    else
+        adapter.setState('Monitors.'+Mon.Name+"."+key, {val: value, ack: true});
 }
 
 
-    // in this template all states changes inside the adapters namespace are subscribed
     adapter.subscribeStates('*');
-
-    // examples for the checkPassword/checkGroup functions
-
-
+    adapter.subscribeObjects('*');
 
 }

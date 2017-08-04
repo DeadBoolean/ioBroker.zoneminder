@@ -12,6 +12,11 @@ var setcookie;
 var CookieAllInOne = "";
 var http = require( "http" );
 
+
+var Zones = require(__dirname + '/zones');
+
+
+
 var Error = "";
 
 module.exports = ZoneMinder;
@@ -24,6 +29,13 @@ function ZoneMinder() {
     this._API_Version;
     this.isConnected = false;
 
+    var Monitors = require(__dirname + '/monitors');
+    var Monitors = new Monitors();
+
+    this.Monitors = function () {
+        return Monitors;
+    }
+
 
     this.API_Request = function(URL,Callback) {
         Error = "";
@@ -32,7 +44,7 @@ function ZoneMinder() {
                 Error = "Can't request "+URL+". Not connected...";
                 return false;
             }
-        else {
+        else try {
             http_options.path = parsedurl.path + URL;
             http_options.headers = {
                 'User-Agent': 'iobroker.zoneminder',
@@ -75,15 +87,23 @@ function ZoneMinder() {
             request.end();
             return true;
         }
-
+        catch (err) {
+            console.log(err);
+        }
 
     }
 
     this.RequestMonitorState = function(id,result) {
         return this.API_Request('/api/monitors/alarm/id:'+id+'/command:status.json', function (data) {
             var fbResponse = JSON.parse(data);
-            result(id, JSON.parse(data).status);
-        });
+            var Index = this.Monitors().GetIndexByZoneMinderID(id);
+            var ActState = JSON.parse(data).status;
+            if (this.Monitors().GetState(Index) != ActState) {
+                this.Monitors().SetState(Index, ActState);
+                result(id, ActState);
+            }
+
+        }.bind(this));
     }
 
     this.RequestVersion = function (result) {
@@ -95,16 +115,51 @@ function ZoneMinder() {
         });
     }
 
-    this.RequestMonitorsList = function (result) {
+    this.RequestZones = function (onZoneChange) {
+        return this.API_Request('/api/zones.json', function (data) {
+        //console.log("STATUS:" + response.statusCode);
+        //console.log("  DATA:" + data);
+            var fbResponse = JSON.parse(data);
+            for (var i = 0; i < fbResponse.zones.length; i++) {
+                var Zones = this.Monitors().GetZonesByZoneMinderID(fbResponse.zones[i].Zone.MonitorId);
+                if (Zones)
+                    Zones.AddOrUpdate(fbResponse.zones[i].Zone, function (key, value) {
+                        if (onZoneChange)
+                            onZoneChange(this.Monitors().GetByZoneMinderID(fbResponse.zones[i].Zone.MonitorId), fbResponse.zones[i].Zone, key, value);
+
+                        //this.MonitorZones.AddOrUpdate(fbResponse.zones[i].Zone);
+                        //result(fbResponse.zones[i].Zone);
+                    }.bind(this));
+            }
+        }.bind(this));
+    }
+
+    this.ForceAlarm = function (MonZMId, value, result) {
+        if (value)
+            OnOffStr = 'on';
+        else
+            OnOffStr = 'off';
+        return this.API_Request('/api/monitors/alarm/id:'+MonZMId+'/command:'+OnOffStr +'.json', function (data) {
+            if (result) result();
+        });
+    }
+
+
+    this.RequestMonitorsList = function (onStateChange, onDone) {
+
         return this.API_Request('/api/monitors.json', function (data) {
             //console.log("STATUS:" + response.statusCode);
             //console.log("  DATA:" + data);
             var fbResponse = JSON.parse(data);
             for (var i = 0; i < fbResponse.monitors.length; i++) {
-                result(fbResponse.monitors[i].Monitor);
+                Monitors.AddOrUpdate(fbResponse.monitors[i].Monitor,onStateChange)
+                //result(fbResponse.monitors[i].Monitor);
+            if (onDone)
+                onDone();
+
             }
 
-        });
+        }.bind(this));
     }
 
 
@@ -186,16 +241,17 @@ this.getError = function () {
         return Error;
 }
 
-this.Send = function(id,value, monitorID) {
-//    curl -XPOST http://server/zm/api/monitors/1.json -d "Monitor[Function]=Modect&Monitor[Enabled]=1"
-    monitorID = 9;
-    var post_data = "Monitor["+id+"]="+value;
-    //var post_data = 'Monitor[Enabled]=1';
+
+
+this.Send = function(id,value, monitorID, url,keyword) {
+
+    var post_data = keyword+"["+id+"]="+value;
+
     var http = require( "http" );
     var options = {
         hostname: parsedurl.hostname,
         port: ( parsedurl.port || 80 ), // 80 by default
-        path: parsedurl.path+'/api/monitors/'+monitorID+'.json',
+        path: parsedurl.path+'/api/'+url,
         method: 'POST',
         headers: {
             'User-Agent': 'iobroker.zoneminder',
@@ -226,4 +282,16 @@ this.Send = function(id,value, monitorID) {
 
     console.log(post_data);
 }
+
+
+    this.Send_MonitorState = function(id,value, monitorID) {
+        this.Send(id,value, monitorID,'monitors/'+monitorID+'.json','Monitor');
+    }
+
+
+    this.Send_ZoneState = function (id,value, monitorID) {
+        this.Send(id,value, monitorID,'zones/'+monitorID+'.json','Zone');
+    }
+
+
 }
