@@ -34,20 +34,31 @@
         "icon": "zoneminder.png",
         "enabled": true,
         "extIcon": "https://raw.githubusercontent.com/ioBroker/ioBroker.template/master/admin/template.png",
-        "keywords": ["zoneminder", "webcam","control","scada"],
+        "keywords": [
+            "zoneminder",
+            "webcam",
+            "control",
+            "scada"
+        ],
         "readme": "https://github.com/DeadBoolean/ioBroker.zoneminder/blob/master/README.md",
         "loglevel": "info",
         "type": "general",
-        "restartAdapters": ["vis"]
+        "restartAdapters": [
+            "vis"
+        ],
+        "authors": [
+            {
+                "name": "DeadBoolean",
+                "email": "deadboolean@wedler-online.de"
+            }
+        ]
     },
     "native": {
         "host": "localhost",
         "user": "admin",
-        "password" : "admin",
-        "pollingMon" : 5,
-        "pollingMonState" : 1
+        "password": "admin",
+        "pollingMon": 5,
+        "pollingMonState": 1
     },
-    "objects": [
-
-    ]
+    "objects": []
 }
