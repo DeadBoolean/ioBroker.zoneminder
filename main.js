@@ -141,7 +141,6 @@ function main() {
         if (!Zone.isConnected) {
             console.log('Connecting...');
             Zone.Login(adapter.config.host,adapter.config.user,adapter.config.password, function(Result){
-                adapter.log.info('Host: ' + adapter.config.host);
                 adapter.setState("Connected", {val: Result, ack: true});
                 console.log(Result);
                 if (!Result)
