@@ -1,9 +1,9 @@
 {
     "common": {
         "name": "zoneminder",
-        "version": "0.5.1",
+        "version": "0.5.2",
         "news": {
-            "0.5.1": {
+            "0.5.2": {
                 "en": "beta version (Admin3)",
                 "de": "Betaversion (Admin3)",
                 "ru": "Бета версия (Admin3)",
@@ -43,14 +43,14 @@
         "icon": "zoneminder.png",
         "enabled": true,
         "materialize": true,
-        "extIcon": "https://raw.githubusercontent.com/ioBroker/ioBroker.template/master/admin/template.png",
+        "extIcon": "https://raw.githubusercontent.com/atl285/ioBroker.zoneminder/master/admin/zoneminder.png",
         "keywords": [
             "zoneminder",
             "webcam",
             "control",
             "scada"
         ],
-        "readme": "https://github.com/DeadBoolean/ioBroker.zoneminder/blob/master/README.md",
+        "readme": "https://github.com/atl285atl285/ioBroker.zoneminder/blob/master/README.md",
         "loglevel": "info",
         "type": "general",
         "restartAdapters": [
