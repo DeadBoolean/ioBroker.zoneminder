@@ -168,9 +168,9 @@ function ZoneMinder() {
 
         Error = "";
 
-        var url = require( "url" );
+        var url = require("url");
 
-        parsedurl = url.parse(Host);
+        parsedurl = url.parse(String(Host));
 
         var Callback = function (data) {
             this.isConnected= !(data.indexOf("var failed = true;") !== -1);
