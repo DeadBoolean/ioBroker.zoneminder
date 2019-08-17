@@ -1,8 +1,16 @@
 {
     "common": {
         "name": "zoneminder",
-        "version": "0.5.0",
+        "version": "0.5.1",
         "news": {
+            "0.5.1": {
+                "en": "beta version (Admin3)",
+                "de": "Betaversion (Admin3)",
+                "ru": "Бета версия (Admin3)",
+                "pt": "Versão beta (Admin3)",
+                "fr": "Version bêta (Admin3)",
+                "nl": "Beta versie (Admin3)"
+            },
             "0.5.0": {
                 "en": "beta version",
                 "de": "Betaversion",
@@ -34,6 +42,7 @@
         "mode": "daemon",
         "icon": "zoneminder.png",
         "enabled": true,
+        "materialize": true,
         "extIcon": "https://raw.githubusercontent.com/ioBroker/ioBroker.template/master/admin/template.png",
         "keywords": [
             "zoneminder",

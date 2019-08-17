@@ -1,0 +1,82 @@
+<html>
+
+<head>
+    <!-- Load ioBroker scripts and styles-->
+    <link rel="stylesheet" type="text/css" href="../../css/adapter.css"/>
+    <link rel="stylesheet" type="text/css" href="../../lib/css/materialize.css">
+
+    <script type="text/javascript" src="../../lib/js/jquery-3.2.1.min.js"></script>
+    <script type="text/javascript" src="../../socket.io/socket.io.js"></script>
+    
+    <script type="text/javascript" src="../../js/translate.js"></script>
+    <script type="text/javascript" src="../../lib/js/materialize.js"></script>
+    <script type="text/javascript" src="../../js/adapter-settings.js"></script>
+
+    <!-- Load our own files -->
+    <script type="text/javascript" src="words.js"></script>
+
+
+    <!-- you have to define 2 functions in the global scope: -->
+    <script type="text/javascript">
+        // the function loadSettings has to exist ...
+        function load(settings, onChange) {
+            // example: select elements with id=key and class=value and insert value
+            for (var key in settings) {
+                // example: select elements with id=key and class=value and insert value
+                var value = $('#' + key + '.value');
+                if (value.attr('type') === 'checkbox') {
+                    value.prop('checked', settings[key]).change(function () {
+                        onChange();
+                    });
+                } else {
+                    value.val(settings[key]).change(function () {
+                        onChange();
+                    }).keyup(function () {
+                        $(this).trigger('change');
+                    });
+                }
+            }
+            // Signal to admin, that no changes yet
+            onChange(false);
+        }
+
+        // ... and the function save has to exist.
+        // you have to make sure the callback is called with the settings object as first param!
+        function save(callback) {
+            // example: select elements with class=value and build settings object
+            var obj = {};
+            $('.value').each(function () {
+                var $this = $(this);
+                if ($this.attr('type') === 'checkbox') {
+                    obj[$this.attr('id')] = $this.prop('checked');
+                } else {
+                    obj[$this.attr('id')] = $this.val();
+                }
+            });
+            callback(obj);
+        }
+    </script>
+
+</head>
+
+<body>
+<!-- you have to put your config page in a div with id adapter-container -->
+<div id="adapter-container">
+
+	<table><tr>
+		<td><img src="zoneminder.png"/></td>
+		<td><h3 class="translate">ZoneMinder settings</h3></td>
+	</tr></table>
+	<p>
+		<span><label for="host" class="translate">ZoneMinder URL</label></span><input type="url" class="value" id="host"/><br>
+		<span><label for="user" class="translate">User</label></span><input  class="value" id="user"/><br>
+		<span><label for="password" class="translate">Password</label></span><input type="password" class="value" id="password"/><br>
+		<span><label for="polling" class="translate">Monitor Update alle </label></span><input type = "number" class="value" id="pollingMon"/>min<br>
+		<span><label for="polling" class="translate">Monitor-Status Update alle </label></span><input type = "number" class="value" id="pollingMonState"/>s<br>
+	</p>
+
+	<p class="translate">on save adapter restarts with new config immediately</p>
+
+</div>
+</body>
+</html>
