@@ -196,7 +196,7 @@ this.Login = function (Host, User, Pass, Done) {
         hostname: parsedurl.hostname,
         port: ( parsedurl.port || 80 ), // 80 by default
         method: 'GET',
-        path: parsedurl.path+'/index.php?' + login_credentials 'view=console',
+        path: parsedurl.path+'/index.php?'+login_credentials+'view=console',
         headers: { },
     };
 
