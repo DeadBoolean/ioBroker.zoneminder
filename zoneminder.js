@@ -174,6 +174,12 @@ this.Login = function (Host, User, Pass, Done) {
 
     parsedurl = url.parse(Host);
 
+    console.info('Parsed URL: ' + parsedurl);
+    console.info('Hostname: ' + parsedurl.hostname);
+    console.info('Port: ' + parsedurl.port);
+    console.info('Path: ' + parsedurl.path);
+
+
     var Callback = function (data) {
         this.isConnected= !(data.indexOf("var failed = true;") !== -1);
         if (!this.isConnected)
