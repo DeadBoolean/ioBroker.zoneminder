@@ -172,7 +172,7 @@ this.Login = function (Host, User, Pass, Done) {
 
     var url = require( "url" );
 
-    parsedurl = url.parse( Host);
+    parsedurl = url.parse(Host);
 
     var Callback = function (data) {
         this.isConnected= !(data.indexOf("var failed = true;") !== -1);
@@ -191,7 +191,7 @@ this.Login = function (Host, User, Pass, Done) {
     if(Username != "" && Password != ""){
         login_credentials = 'username='+Username+'&password='+Password+'&action=login&';
     }
-
+ 
     http_options = {
         hostname: parsedurl.hostname,
         port: ( parsedurl.port || 80 ), // 80 by default
