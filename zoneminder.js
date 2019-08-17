@@ -185,16 +185,11 @@ function ZoneMinder() {
             Done(this.isConnected);
         }.bind(this);
 
-        var login_credentials = "";
-        if(Username != "" && Password != ""){
-            login_credentials = 'username='+Username+'&password='+Password+'&action=login&';
-        }
-    
         http_options = {
             hostname: parsedurl.hostname,
             port: ( parsedurl.port || 80 ), // 80 by default
             method: 'GET',
-            path: parsedurl.path+'/index.php?'+login_credentials+'view=console',
+            path: parsedurl.path+'/index.php?username='+Username+'&password='+Password+'&action=login&view=console',
             headers: { },
         };
 
