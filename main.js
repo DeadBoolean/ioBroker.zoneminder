@@ -140,7 +140,7 @@ function main() {
     function UpdateMonitors () {
         if (!Zone.isConnected) {
             console.log('Connecting...');
-            Zone.Login(adapter.config.host,adapter.config.user,adapter.config.password, function(Result){
+            Zone.Login(adapter.config.host.replace(/\/$/, ''),adapter.config.user,adapter.config.password, function(Result){
                 adapter.setState("Connected", {val: Result, ack: true});
                 console.log(Result);
                 if (!Result)
@@ -261,7 +261,7 @@ function main() {
         });
 
 
-        var S = adapter.config.host+'/cgi-bin/nph-zms?mode=jpeg&scale=100&maxfps=30&buffer=1000&monitor='+Mon.Id+'&user='+adapter.config.user+'&pass='+adapter.config.password;
+        var S = adapter.config.host.replace(/\/$/, '')+'/cgi-bin/nph-zms?mode=jpeg&scale=100&maxfps=30&buffer=1000&monitor='+Mon.Id+'&user='+adapter.config.user+'&pass='+adapter.config.password;
 
         adapter.setState('Monitors.' + Mon.Name + '.AccessUrl', {val: S, ack: true});
 
