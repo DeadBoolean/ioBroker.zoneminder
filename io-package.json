@@ -1,9 +1,9 @@
 {
     "common": {
         "name": "zoneminder",
-        "version": "0.5.2",
+        "version": "0.5.3",
         "news": {
-            "0.5.2": {
+            "0.5.3": {
                 "en": "beta version (Admin3)",
                 "de": "Betaversion (Admin3)",
                 "ru": "Бета версия (Admin3)",
