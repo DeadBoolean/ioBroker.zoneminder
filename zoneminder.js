@@ -64,7 +64,6 @@ function ZoneMinder() {
                     response.on(
                         "end",
                         function () {
-                            console.log("INFO: data " + data);
                             var fbResponse = JSON.parse(data);
                             if (fbResponse.success == false) {
                                 Error = fbResponse.data.message;
@@ -134,10 +133,9 @@ function ZoneMinder() {
     }
 
     this.ForceAlarm = function (MonZMId, value, result) {
+        var OnOffStr = 'off';
         if (value)
             OnOffStr = 'on';
-        else
-            OnOffStr = 'off';
         return this.API_Request('/api/monitors/alarm/id:'+MonZMId+'/command:'+OnOffStr +'.json', function (data) {
             if (result) result();
         });
@@ -147,15 +145,13 @@ function ZoneMinder() {
     this.RequestMonitorsList = function (onStateChange, onDone) {
 
         return this.API_Request('/api/monitors.json', function (data) {
-            //console.log("STATUS:" + response.statusCode);
             //console.log("  DATA:" + data);
             var fbResponse = JSON.parse(data);
             for (var i = 0; i < fbResponse.monitors.length; i++) {
-                Monitors.AddOrUpdate(fbResponse.monitors[i].Monitor,onStateChange)
+                Monitors.AddOrUpdate(fbResponse.monitors[i].Monitor,onStateChange);
                 //result(fbResponse.monitors[i].Monitor);
-            if (onDone)
-                onDone();
-
+                if (onDone)
+                    onDone();
             }
 
         }.bind(this));
@@ -168,12 +164,11 @@ function ZoneMinder() {
 
         Error = "";
 
-        var url = require("url");
+        var url = require( "url" );
 
-        parsedurl = url.parse(String(Host));
-
+        parsedurl = url.parse(Host.replace(/\/$/, ''));
         var Callback = function (data) {
-            this.isConnected= !(data.indexOf("var failed = true;") !== -1);
+            this.isConnected = !(data.indexOf("var failed = true;") !== -1);
             if (!this.isConnected)
                 Error = "Login failed! Check username/password";
             Done(this.isConnected);
@@ -260,8 +255,8 @@ function ZoneMinder() {
         };
 
         var post_req = http.request(options, function(res) {
-            console.log('Status: ' + res.statusCode);
-            console.log('Headers: ' + JSON.stringify(res.headers));
+            //console.log('Status: ' + res.statusCode);
+            //console.log('Headers: ' + JSON.stringify(res.headers));
             res.setEncoding('utf8');
 
             res.on('data', function (chunk) {
