@@ -41,7 +41,6 @@ adapter.on('objectChange', function (id, obj) {
     // Warning, obj can be null if it was deleted
 
     if (obj == null) {
-
         id = id.replace(adapter.name+'.'+adapter.instance+'.Monitors.','');
         var index = Zone.Monitors().GetIndexByMonitorName(id);
         if (index > -1)
@@ -52,7 +51,6 @@ adapter.on('objectChange', function (id, obj) {
 // is called if a subscribed state changes
 adapter.on('stateChange', function (id, state) {
     // Warning, state can be null if it was deleted
-
 
     if (state && !state.ack) {
         adapter.getObject(id, function (err, obj) {
@@ -81,7 +79,6 @@ adapter.on('message', function (obj) {
         if (obj.command == 'send') {
             // e.g. send email or pushover or whatever
             console.log('send command');
-
             // Send response in callback if required
             if (obj.callback) adapter.sendTo(obj.from, obj.command, 'Message received', obj.callback);
         }
@@ -157,7 +154,6 @@ function main() {
         }
         else {
             Zone.RequestMonitorsList(onMonitorStateChange,onMonitorUpdateDone);
-
         }
     }
 
@@ -247,7 +243,7 @@ function main() {
             },
             native: {}
         });
-        // });
+
 
         adapter.setObjectNotExists('Monitors.' + Mon.Name + '.AccessUrl', {
             type: 'state',
@@ -260,11 +256,9 @@ function main() {
             native: {}
         });
 
-
         var S = adapter.config.host.replace(/\/$/, '')+'/cgi-bin/nph-zms?mode=jpeg&scale=100&maxfps=30&buffer=1000&monitor='+Mon.Id+'&user='+adapter.config.user+'&pass='+adapter.config.password;
 
         adapter.setState('Monitors.' + Mon.Name + '.AccessUrl', {val: S, ack: true});
-
 
         adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Zones', {
             type: 'channel',
@@ -300,7 +294,7 @@ function main() {
             native: {}
         });
         adapter.setState('Monitors.' + Mon.Name + '.States.State', {val: '', ack: true});
-    */
+        */
         adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Alarm', {
             type: 'channel',
             common: {
@@ -321,9 +315,7 @@ function main() {
                 parentMonZMId : Mon['Id'],
                 statetyp : "alarm"
             },
-            native: {
-
-            }
+            native: {}
         });
 
         adapter.setObjectNotExists('Monitors.' + Mon.Name + '.Alarm.AlarmState', {
@@ -348,7 +340,6 @@ function main() {
                 parentMonId : 'Monitors.' + Mon.Name,
                 parentMonZMId : Mon['Id'],
                 statetyp : "monitor"
-
             },
             native: {}
         });
@@ -359,7 +350,6 @@ function main() {
             if (!err)
                 if ((state == null) || (state.val != value))
                 {
-
                     adapter.setState('Monitors.'+Mon.Name+"."+key, {val: value, ack: true});
                 }
             })
