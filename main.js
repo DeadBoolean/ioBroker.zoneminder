@@ -5,7 +5,7 @@
 
 
 // you have to require the utils module and call adapter function
-var utils =    require(__dirname + '/lib/utils'); // Get common adapter utils
+var utils = require('@iobroker/adapter-core'); // Get common adapter utils
 var ZoneMinder = require(__dirname + '/zoneminder');
 var Zone = new ZoneMinder();
 

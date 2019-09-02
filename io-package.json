@@ -29,6 +29,7 @@
             "fr": "ioBroker adaptateur modèle",
             "nl": "ioBroker Template Adapter"
         },
+        "license": "Apache License 2.0",
         "platform": "Javascript/Node.js",
         "mode": "daemon",
         "icon": "zoneminder.png",
